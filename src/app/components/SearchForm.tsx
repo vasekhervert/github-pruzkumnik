@@ -8,6 +8,10 @@ const SearchForm = ({ searchParams }: { searchParams: SearchParamsType }) => {
   const [query, setQuery] = useState(searchParams.q ?? "");
   const router = useRouter();
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setQuery(e.target.value);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     router.push(`?q=${encodeURIComponent(query)}`);
@@ -18,7 +22,7 @@ const SearchForm = ({ searchParams }: { searchParams: SearchParamsType }) => {
       <input
         type="text"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={handleInputChange}
         placeholder="Zadejte název repozitáře"
         className="w-full p-2 border text-black font-bold border-gray-300 rounded me-2"
       />
