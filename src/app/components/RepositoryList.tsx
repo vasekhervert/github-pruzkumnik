@@ -1,6 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { gql } from "@apollo/client";
-import { getClient } from "../lib/apollo-client";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { gql, useQuery } from "@apollo/client";
 import { SearchParamsType } from "./utils";
 import { Star } from "./Star";
 
@@ -44,53 +46,64 @@ interface Repository {
   };
 }
 
-const RepositoryList = async ({
+const RepositoryList = ({
   searchParams,
 }: {
   searchParams: SearchParamsType;
 }) => {
-  const { loading, error, data } = await getClient().query({
-    query: SEARCH_REPOSITORIES,
+  const { loading, error, data } = useQuery(SEARCH_REPOSITORIES, {
     variables: { query: searchParams.q || "" },
   });
 
-  if (!data) return null;
+  const [repositories, setRepositories] = useState<Repository[]>([]);
+
+  const updateRepositories = useCallback(() => {
+    if (data?.search?.edges) {
+      setRepositories(data.search.edges);
+    }
+  }, [data]);
+
+  useEffect(() => {
+    updateRepositories();
+  }, [updateRepositories]);
+
+  const sortedRepositories = useMemo(() => {
+    return [...repositories].sort(
+      (a: Repository, b: Repository) =>
+        b.node.stargazerCount - a.node.stargazerCount
+    );
+  }, [repositories]);
+
   if (loading) return <p>Načítání...</p>;
   if (error) return <p>Chyba: {error.message}</p>;
-
-  const repositories: Repository[] = data?.search?.edges || [];
-  const sortedRepositories = [...repositories].sort(
-    (a: Repository, b: Repository) =>
-      b.node.stargazerCount - a.node.stargazerCount
-  );
 
   return (
     <>
       <ul className="space-y-4">
         {sortedRepositories.map(({ node: repo }: Repository) => (
-          <li key={repo.url} className="border border-gray-500 p-4 rounded">
+          <li key={repo?.url} className="border border-gray-500 p-4 rounded">
             <h2 className="text-xl font-bold">
-              <Link href={repo.url} className="text-blue-500 hover:underline">
-                {repo.name}
+              <Link href={repo?.url} className="text-blue-500 hover:underline">
+                {repo?.name}
               </Link>
             </h2>
             <p className="text-sm">
               by{" "}
               <Link
-                href={repo.owner.url}
+                href={repo.owner?.url}
                 className="text-blue-500 hover:underline"
               >
-                {repo.owner.login}
+                {repo.owner?.login}
               </Link>
             </p>
-            <p className="text-gray-400 py-4">{repo.description}</p>
+            <p className="text-gray-400 py-4">{repo?.description}</p>
 
             <div className="flex items-center gap-4">
               <span className="text-sm bg-blue-800 text-gray-300 font-bold px-1 rounded-md">
                 {repo.primaryLanguage?.name || "N/A"}
               </span>
               <span className="flex items-center text-sm">
-                <Star /> {repo.stargazerCount}
+                <Star /> {repo?.stargazerCount}
               </span>
             </div>
           </li>
